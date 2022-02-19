@@ -14,9 +14,9 @@
 
 声明创建时间
 
-### +modi {hh:mm} {version} {color}
+### +modi {hh:mm} \[color=1]
 
-声明更正时间 (默认version=1, color=yellow)
+声明更正时间
 
 ### :{学科}
 
@@ -39,7 +39,7 @@
 
 \*{text}*   表示强调(strong标签)
 
-\*{version}-{text}-*
+\*:{version}:{text}*
             表示强调(自定义版本)
 
 <?>         表示注释(strong标签)

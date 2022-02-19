@@ -1,8 +1,8 @@
 /**
  * @file hsc.cpp Homework Showing Compiler
- * @version 0.0.2 (Dev)
+ * @version 0.1.0 (Debug)
  * @author Jason M. Li
- * @date 2022.2.16
+ * @date 2022.2.18
  */
 
 #include <cstdio>
@@ -31,6 +31,7 @@ enum SP_CH {
 	START_ESCAPE, // 转义开始
 	ROOT // 根元素/占位符
 };
+
 class Tag {
 	public:
 		short sp_ch;
@@ -52,10 +53,24 @@ class Modification {
 		}
 };
 
+class Item {
+	public:
+		std::string text;
+		int number;
+		Item() {}
+		Item(std::string _text) {
+			text = _text;
+		}
+		Item(std::string _text, int _number) {
+			text = _text;
+			number = _number;
+		}
+};
+
 class Subject {
 	public:
 		std::string name;
-		std::vector<std::string> items;
+		std::vector<Item> items;
 		Subject() {}
 		Subject(std::string _name) {
 			name = _name;
@@ -96,7 +111,6 @@ int main(int argc, char *argv[]) {
 	std::ifstream reader;
 	std::ofstream writer;
 	reader.open(filename);
-	writer.open(filename.substr(0, filename.size() - 5) + ".html");
 	if (!reader.is_open()) {
 		printf("Error 0x0010: Read File Failed.");
 		return 0x0010;
@@ -105,7 +119,8 @@ int main(int argc, char *argv[]) {
 	tags.push(Tag(SP_CH::ROOT));
 	tags.push(Tag(SP_CH::ROOT)); // 根元素，防溢出
 	OutputFile outfile;
-	int number_counter = 0;
+	int note_counter = 0,
+	number_counter = 0;
 	char linebuffer[LINE_BUF];
 	std::string strbuffer;
 	int linelength;
@@ -138,7 +153,7 @@ int main(int argc, char *argv[]) {
 					strbuffer = "";
 				}
 			}
-			else if (first_ch == ':') {
+			else if (first_ch == '#') {
 				tags.push(Tag(SP_CH::START_SUBJECT));
 				strbuffer = strbuffer.substr(1);
 			}
@@ -149,8 +164,8 @@ int main(int argc, char *argv[]) {
 			int tagsize = tags.size();
 			int top_sp_ch = tags.top().sp_ch;
 			if (tagsize == 0) {
-				printf("ERROR 0x0100: no tags left.");
-				return 0x0100;
+				printf("ERROR 0x0020: no tags left.");
+				return 0x0020;
 			}
 			if (tagsize == 1) {
 				printf("WARNING: The last tag is ROOT tag.");
@@ -178,13 +193,13 @@ int main(int argc, char *argv[]) {
 				tags.top().tempstr += ch;
 			}
 			else if (ch == '>' && top_sp_ch== SP_CH::START_NOTE) {
-				number_counter += 1;
+				note_counter += 1;
 				tags.pop();
-				tags.top().tempstr += add_label(std::to_string(number_counter), "strong");
+				tags.top().tempstr += add_label(std::to_string(note_counter), "strong");
 			}
 			else if (ch == '>' && top_sp_ch == SP_CH::START_NOTE_SYMBOL_TEXT) {
-				number_counter += 1;
-				int note_number = number_counter + tags.top().tempint * atoi(tags.top().tempstr.c_str());
+				note_counter += 1;
+				int note_number = note_counter + tags.top().tempint * atoi(tags.top().tempstr.c_str());
 				tags.pop();
 				tags.pop();
 				tags.top().tempstr += add_label(std::to_string(note_number), "strong");
@@ -219,7 +234,7 @@ int main(int argc, char *argv[]) {
 				}
 				else {
 					std::map<std::string, std::string> attrs;
-					attrs["style"] = "--color: " + outfile.modified_times[version - 1].bg_color;
+					attrs["style"] = "--bgc: " + outfile.modified_times[version - 1].bg_color;
 					tags.top().tempstr += add_label(text, "strong", attrs);
 				}
 			}
@@ -287,11 +302,65 @@ int main(int argc, char *argv[]) {
 				tags.pop();
 			}
 			else if (top_sp_ch == SP_CH::START_ITEM) {
-				outfile.subjects.back().items.push_back(tags.top().tempstr);
+				number_counter += 1;
+				outfile.subjects.back().items.push_back(Item(tags.top().tempstr, number_counter));
 				tags.pop();
 			}
 		}
 	}
 	reader.close();
+	printf("Read Finished.");
+	writer.open(filename.substr(0, filename.size() - 5) + ".html");
+	if (!writer.is_open()) {
+		printf("Error 0x0011: Write File Failed.");
+		return 0x0011;
+	}
+	{
+		// 写文件
+		writer.write("<!DOCTYPE html>\n<html lang='zh-cn'>\n<head>\n<meta name='charset' content='UTF-8' />\n<meta name='generator' content='Visual Studio Code' />\n<meta name='author' content='Jason Li' />\n<meta name='robots' content='noindex' />\n<title>作业</title>\n<link rel='shortcut icon' href='../img/cube.ico' type='image/x-icon'>\n<link rel='stylesheet' href='../style.css' />\n</head>\n", 400);
+		std::string table = "<thead>\n<tr>\n<td colspan='3'>" + outfile.date + "作业</td>\n</tr>\n<tr>\n<td>科目</td>\n<td>序号</td>\n<td>项目</td>\n</tr>\n</thead>";
+		std::string tbody = "";
+		std::map<std::string, std::string> attr_withsn;
+		attr_withsn["class"] = "withsn";
+		std::map<std::string, std::string> attr_withoutsn;
+		attr_withoutsn["class"] = "withoutsn";
+		int subject_length = outfile.subjects.size();
+		for (int i=0; i<subject_length; i++) {
+			Subject subject = outfile.subjects[i];
+			int item_length = subject.items.size();
+			Item item;
+			if (item_length != 0) {
+				item = subject.items[0];
+				std::map<std::string, std::string> attrs;
+				attrs["colspan"] = std::to_string(item_length);
+				std::string td1 = add_label(subject.name, "td", attrs);
+				std::string td2 = add_label(std::to_string(item.number), "td");
+				std::string td3 = add_label(item.text, "td");
+				tbody += add_label(td1 + td2 + td3, "tr", attr_withsn);
+			}
+			for (int j=1; j<item_length; j++) {
+				item = subject.items[j];
+				std::string td1 = add_label(std::to_string(item.number), "td");
+				std::string td2 = add_label(item.text, "td");
+				tbody += add_label(td1 + td2, "tr", attr_withoutsn);
+			}
+		}
+		table += add_label(tbody, "tbody");
+		table += '\n';
+		writer.write(table.c_str(), table.size());
+		std::string create_modi_note;
+		create_modi_note += outfile.created_time + " 发布";
+		int modi_length = outfile.modified_times.size();
+		for (int i=0; i<modi_length; i++) {
+			Modification modification = outfile.modified_times[i];
+			std::map<std::string, std::string> attrs;
+			attrs["style"] = "--bgc: " + modification.bg_color;
+			create_modi_note += add_label(" / " + modification.modified_time + " 更正", "strong", attrs);
+		}
+		create_modi_note = add_label(create_modi_note, "span");
+		create_modi_note += '\n';
+		writer.write(create_modi_note.c_str(), create_modi_note.size());
+		writer.write("</body></html>\n", 16);
+	}
 	return 0;
 }

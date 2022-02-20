@@ -9,7 +9,11 @@ thead{
 
 strong{
     color: brown;
-    background-color: var(--bkc, none);
+    background-color: var(--bgc, none);
+}
+
+strong.note {
+    color: blue;
 }
 
 td{

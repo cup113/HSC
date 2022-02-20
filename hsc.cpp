@@ -1,6 +1,6 @@
 /**
  * @file hsc.cpp Homework Showing Compiler
- * @version 0.2.0 (Beta)
+ * @version 0.2.1 (Beta)
  * @author Jason M. Li
  * @date 2022.2.20
  */
@@ -404,7 +404,7 @@ int main(int argc, char *argv[]) {
 	}
 	{
 		// 写文件
-		writer << "<!DOCTYPE html>\n<html lang='zh-cn'>\n<head>\n<meta name='charset' content='UTF-8' />\n<meta name='generator' content='Visual Studio Code' />\n<meta name='author' content='Jason Li' />\n<meta name='robots' content='noindex' />\n<title>作业</title>\n<link rel='shortcut icon' href='../img/cube.ico' type='image/x-icon'>\n<link rel='stylesheet' href='../style.css' />\n</head>\n<body>\n";
+		writer << "<!DOCTYPE html>\n<html lang='zh-cn'>\n<head>\n<meta name='charset' content='utf-8'>\n<meta name='generator' content='Visual Studio Code'>\n<meta name='author' content='Jason Li'>\n<meta name='robots' content='noindex'>\n<title>作业</title>\n<link rel='shortcut icon' href='img/cube.ico' type='image/x-icon'>\n<link rel='stylesheet' href='style.css'>\n</head>\n<body>\n";
 		std::string table = "<thead>\n<tr>\n<td colspan='3'>" + outfile.date + "作业</td>\n</tr>\n<tr>\n<td>科目</td>\n<td>序号</td>\n<td>项目</td>\n</tr>\n</thead>",
 		tbody = "";
 		int subject_length = outfile.subjects.size();

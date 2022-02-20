@@ -1,8 +1,8 @@
 /**
  * @file hsc.cpp Homework Showing Compiler
- * @version 0.1.0 (Debug)
+ * @version 0.2.0 (Beta)
  * @author Jason M. Li
- * @date 2022.2.18
+ * @date 2022.2.20
  */
 
 #include <cstdio>
@@ -10,11 +10,13 @@
 #include <fstream>
 #include <stack>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <map>
+#include <sys/time.h>
 #define LINE_BUF 4096
 
-enum SP_CH {
+enum SP_CH: short {
 	META_DATE = 0, // 日期声明开始
 	META_CREATED, // 创建声明开始
 	META_MODIFIED, // 更正声明开始
@@ -34,11 +36,11 @@ enum SP_CH {
 
 class Tag {
 	public:
-		short sp_ch;
+		short sp_ch = -1;
 		std::string tempstr = "";
 		int tempint = 0;
 		Tag(short _sp_ch) {
-			sp_ch == _sp_ch;
+			sp_ch = _sp_ch;
 		}
 };
 
@@ -97,12 +99,15 @@ std::string add_label(std::string text, std::string tagName, std::map<std::strin
 		std::string tempattr = ' ' + attr->first + "=\"" + attr->second + '"';
 		result += tempattr;
 	}
+	result += ">";
 	result += text;
 	result += "</" + tagName + '>';
 	return result;
 }
 
 int main(int argc, char *argv[]) {
+	struct timeval tv_begin, tv_end, tv_program_start;
+	gettimeofday(&tv_program_start, NULL);
 	if (argc < 2) {
 		printf("Error 0x0001: No File Input.");
 		return 0x0001;
@@ -120,47 +125,61 @@ int main(int argc, char *argv[]) {
 	tags.push(Tag(SP_CH::ROOT)); // 根元素，防溢出
 	OutputFile outfile;
 	int note_counter = 0,
-	number_counter = 0;
+	number_counter = 0,
+	line_counter = 0;
 	char linebuffer[LINE_BUF];
 	std::string strbuffer;
 	int linelength;
+	std::map<std::string, std::string> attr_withsn,
+	attr_withoutsn,
+	attr_border,
+	attr_note;
+	attr_withsn["class"] = "withsn";
+	attr_withoutsn["class"] = "withoutsn";
+	attr_border["border"] = "1";
+	attr_note["class"] = "note";
+	gettimeofday(&tv_begin, NULL);
 	while (reader.getline(linebuffer, LINE_BUF)) {
 		linelength = strlen(linebuffer);
-		strbuffer.copy(linebuffer, 0, linelength);
+		strbuffer = linebuffer;
 		// 监测是否为行级元素
 		{
 			char first_ch = strbuffer[0];
 			if (first_ch == '+') {
-				std::string next_five_ch = strbuffer.substr(1, 45);
+				std::string next_five_ch = strbuffer.substr(1, 5);
 				if (next_five_ch.compare("date ") == 0) {
 					tags.push(Tag(SP_CH::META_DATE));
 				}
-				if (next_five_ch.compare("crea ") == 0) {
+				else if (next_five_ch.compare("crea ") == 0) {
 					tags.push(Tag(SP_CH::META_CREATED));
 				}
 				else if (next_five_ch.compare("modi ") == 0) {
 					tags.push(Tag(SP_CH::META_MODIFIED));
 				}
 				strbuffer = strbuffer.substr(6);
+				linelength -= 6;
 			}
 			else if (first_ch == '-') {
 				if (strbuffer[1] == ' ') {
 					tags.push(Tag(SP_CH::START_ITEM));
 					strbuffer = strbuffer.substr(2);
+					linelength -= 2;
 				}
 				else if (strbuffer.substr(1, 2).compare("--") == 0) {
 					tags.push(Tag(SP_CH::START_NOTE));
 					strbuffer = "";
+					linelength = 0;
 				}
 			}
 			else if (first_ch == '#') {
 				tags.push(Tag(SP_CH::START_SUBJECT));
 				strbuffer = strbuffer.substr(1);
+				linelength -= 1;
 			}
 		}
 		// 行内元素监测
 		for (int i=0; i<linelength; i++) {
-			unsigned char ch = linebuffer[i];
+			unsigned char ch = strbuffer[i];
 			int tagsize = tags.size();
 			int top_sp_ch = tags.top().sp_ch;
 			if (tagsize == 0) {
@@ -181,32 +200,35 @@ int main(int argc, char *argv[]) {
 				tags.push(Tag(SP_CH::START_ESCAPE));
 			}
 			// 注释
-			else if (ch == '<' && i < linelength - 1 && linebuffer[i+1] == '?') {
+			else if (ch == '<' && i < linelength - 1 && strbuffer[i+1] == '?') {
 				tags.push(Tag(SP_CH::START_NOTE_SYMBOL));
 				++i;
 			}
-			else if ((ch == '+' || ch == '-') && top_sp_ch == SP_CH::START_NOTE) {
+			else if ((ch == '+' || ch == '-') && top_sp_ch == SP_CH::START_NOTE_SYMBOL) {
 				tags.top().tempint = 44 - ch;
 				tags.push(Tag(SP_CH::START_NOTE_SYMBOL_TEXT));
 			}
 			else if (ch >= '0' && ch <= '9' && top_sp_ch == SP_CH::START_NOTE_SYMBOL_TEXT) {
 				tags.top().tempstr += ch;
 			}
-			else if (ch == '>' && top_sp_ch== SP_CH::START_NOTE) {
+			else if (ch == '>' && top_sp_ch== SP_CH::START_NOTE_SYMBOL) {
 				note_counter += 1;
 				tags.pop();
-				tags.top().tempstr += add_label(std::to_string(note_counter), "strong");
+				tags.top().tempstr += add_label("(注" + std::to_string(note_counter) + ')', "strong", attr_note);
 			}
 			else if (ch == '>' && top_sp_ch == SP_CH::START_NOTE_SYMBOL_TEXT) {
 				note_counter += 1;
-				int note_number = note_counter + tags.top().tempint * atoi(tags.top().tempstr.c_str());
+				int note_number = atoi(tags.top().tempstr.c_str());
 				tags.pop();
+				note_number *= tags.top().tempint;
+				note_number += note_counter;
 				tags.pop();
-				tags.top().tempstr += add_label(std::to_string(note_number), "strong");
+				tags.top().tempstr += add_label("(注" + std::to_string(note_number) + ')', "strong", attr_note);
+				note_counter -= 1;
 			}
 			// 强调
 			else if (ch == '*' && top_sp_ch != SP_CH::START_EMPHASIZE_TEXT) {
-				if (i < linelength - 1 && linebuffer[i+1] == ':') {
+				if (i < linelength - 1 && strbuffer[i+1] == ':') {
 					tags.push(Tag(SP_CH::START_EMPHASIZE));
 					++i;
 				}
@@ -222,7 +244,7 @@ int main(int argc, char *argv[]) {
 				int version = atoi(tags.top().tempstr.c_str());
 				tags.top().tempint = version;
 				tags.top().tempstr.clear();
-				tags.push(SP_CH::START_EMPHASIZE_TEXT);
+				tags.push(Tag(SP_CH::START_EMPHASIZE_TEXT));
 			}
 			else if (ch == '*' && top_sp_ch == SP_CH::START_EMPHASIZE_TEXT) {
 				std::string text = tags.top().tempstr;
@@ -249,14 +271,13 @@ int main(int argc, char *argv[]) {
 				tags.push(Tag(SP_CH::START_HYPERLINK_TEXT));
 			}
 			else if (ch == ')' && top_sp_ch == SP_CH::START_HYPERLINK && tags.top().tempint == 1) {
-				tags.pop();
 				std::string url = tags.top().tempstr;
 				tags.pop();
 				std::map<std::string, std::string> attrs;
 				attrs["href"] = url;
 				tags.top().tempstr += add_label(url, "a", attrs);
 			}
-			else if (ch == ')' && top_sp_ch == SP_CH::START_EMPHASIZE_TEXT) {
+			else if (ch == ')' && top_sp_ch == SP_CH::START_HYPERLINK_TEXT) {
 				std::string text = tags.top().tempstr;
 				tags.pop();
 				std::string url = tags.top().tempstr;
@@ -271,9 +292,67 @@ int main(int argc, char *argv[]) {
 					tags.push(Tag(SP_CH::META_MODIFIED_COLOR));
 				}
 			}
+			else {
+				tags.top().tempstr += ch;
+			}
 		}
-		// 监测堆栈/最近的行级项
+		while (tags.top().sp_ch >= SP_CH::START_HYPERLINK && tags.top().sp_ch <= SP_CH::START_ESCAPE) {
+			// 过滤堆栈未使用内容
+			std::string tempstr = tags.top().tempstr;
+			int tempint = tags.top().tempint;
+			short top_sp_ch = tags.top().sp_ch;
+			tags.pop();
+			switch (top_sp_ch) {
+				case (SP_CH::START_EMPHASIZE):
+					tags.top().tempstr += "*:";
+					break;
+				case (SP_CH::START_EMPHASIZE_TEXT):
+					if (tags.top().tempint != 0) {
+						int tempver = tags.top().tempint;
+						tags.pop();
+						tags.top().tempstr += "*:";
+						tags.top().tempstr += std::to_string(tempver);
+						tags.top().tempstr += ':';
+					}
+					else {
+						tags.pop();
+						tags.top().tempstr += '*';
+					}
+					break;
+				case (SP_CH::START_ESCAPE):
+					tags.top().tempstr += '\\';
+					break;
+				case (SP_CH::START_HYPERLINK):
+					tags.top().tempstr += '[';
+					if (tempint == 1) {
+						tags.top().tempstr += tempstr;
+						tags.top().tempstr += ']';
+						tempstr.clear();
+					}
+					break;
+				case (SP_CH::START_HYPERLINK_TEXT):
+					{
+						Tag temptag = tags.top();
+						tags.pop();
+						tags.top().tempstr += '[';
+						tags.top().tempstr += temptag.tempstr;
+						tags.top().tempstr += "](";
+						tempstr.clear();
+					}
+					break;
+				case (SP_CH::START_NOTE_SYMBOL):
+					tags.top().tempstr += "<?";
+					break;
+				case (SP_CH::START_NOTE_SYMBOL_TEXT):
+					tags.pop();
+					tags.top().tempstr += "<?";
+					tags.top().tempstr += (char)(44 + tempint);
+					break;
+			}
+			tags.top().tempstr += tempstr;
+		}
 		{
+			// 监测堆栈/最近的行级项
 			int top_sp_ch = tags.top().sp_ch;
 			if (top_sp_ch == SP_CH::META_DATE) {
 				outfile.date = tags.top().tempstr;
@@ -307,23 +386,27 @@ int main(int argc, char *argv[]) {
 				tags.pop();
 			}
 		}
+		line_counter += 1;
+		if (line_counter % 10 == 0) printf("Read line %d successfully\r", line_counter);
 	}
 	reader.close();
-	printf("Read Finished.");
-	writer.open(filename.substr(0, filename.size() - 5) + ".html");
+	{
+		printf("Read line %d successfully\n", line_counter);
+		gettimeofday(&tv_end, NULL);
+		unsigned timediff = (tv_end.tv_sec - tv_begin.tv_sec) * 1000000 + (tv_end.tv_usec - tv_begin.tv_usec);
+		printf("Read successfully in %d.%03d ms.\n", timediff / 1000, timediff % 1000);
+		tv_begin = tv_end;
+	}
+	writer.open(filename.substr(0, filename.size() - 4) + ".html");
 	if (!writer.is_open()) {
 		printf("Error 0x0011: Write File Failed.");
 		return 0x0011;
 	}
 	{
 		// 写文件
-		writer.write("<!DOCTYPE html>\n<html lang='zh-cn'>\n<head>\n<meta name='charset' content='UTF-8' />\n<meta name='generator' content='Visual Studio Code' />\n<meta name='author' content='Jason Li' />\n<meta name='robots' content='noindex' />\n<title>作业</title>\n<link rel='shortcut icon' href='../img/cube.ico' type='image/x-icon'>\n<link rel='stylesheet' href='../style.css' />\n</head>\n", 400);
-		std::string table = "<thead>\n<tr>\n<td colspan='3'>" + outfile.date + "作业</td>\n</tr>\n<tr>\n<td>科目</td>\n<td>序号</td>\n<td>项目</td>\n</tr>\n</thead>";
-		std::string tbody = "";
-		std::map<std::string, std::string> attr_withsn;
-		attr_withsn["class"] = "withsn";
-		std::map<std::string, std::string> attr_withoutsn;
-		attr_withoutsn["class"] = "withoutsn";
+		writer << "<!DOCTYPE html>\n<html lang='zh-cn'>\n<head>\n<meta name='charset' content='UTF-8' />\n<meta name='generator' content='Visual Studio Code' />\n<meta name='author' content='Jason Li' />\n<meta name='robots' content='noindex' />\n<title>作业</title>\n<link rel='shortcut icon' href='../img/cube.ico' type='image/x-icon'>\n<link rel='stylesheet' href='../style.css' />\n</head>\n<body>\n";
+		std::string table = "<thead>\n<tr>\n<td colspan='3'>" + outfile.date + "作业</td>\n</tr>\n<tr>\n<td>科目</td>\n<td>序号</td>\n<td>项目</td>\n</tr>\n</thead>",
+		tbody = "";
 		int subject_length = outfile.subjects.size();
 		for (int i=0; i<subject_length; i++) {
 			Subject subject = outfile.subjects[i];
@@ -332,10 +415,10 @@ int main(int argc, char *argv[]) {
 			if (item_length != 0) {
 				item = subject.items[0];
 				std::map<std::string, std::string> attrs;
-				attrs["colspan"] = std::to_string(item_length);
-				std::string td1 = add_label(subject.name, "td", attrs);
-				std::string td2 = add_label(std::to_string(item.number), "td");
-				std::string td3 = add_label(item.text, "td");
+				attrs["rowspan"] = std::to_string(item_length);
+				std::string td1 = add_label(subject.name, "td", attrs),
+				td2 = add_label(std::to_string(item.number), "td"),
+				td3 = add_label(item.text, "td");
 				tbody += add_label(td1 + td2 + td3, "tr", attr_withsn);
 			}
 			for (int j=1; j<item_length; j++) {
@@ -346,8 +429,9 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		table += add_label(tbody, "tbody");
+		table = add_label(table, "table", attr_border);
 		table += '\n';
-		writer.write(table.c_str(), table.size());
+		writer << table;
 		std::string create_modi_note;
 		create_modi_note += outfile.created_time + " 发布";
 		int modi_length = outfile.modified_times.size();
@@ -355,12 +439,20 @@ int main(int argc, char *argv[]) {
 			Modification modification = outfile.modified_times[i];
 			std::map<std::string, std::string> attrs;
 			attrs["style"] = "--bgc: " + modification.bg_color;
-			create_modi_note += add_label(" / " + modification.modified_time + " 更正", "strong", attrs);
+			create_modi_note += " / " + add_label(modification.modified_time + " 更正", "strong", attrs);
 		}
 		create_modi_note = add_label(create_modi_note, "span");
 		create_modi_note += '\n';
-		writer.write(create_modi_note.c_str(), create_modi_note.size());
-		writer.write("</body></html>\n", 16);
+		writer << create_modi_note;
+		writer << "</body></html>\n";
+	}
+	writer.close();
+	{
+		gettimeofday(&tv_end, NULL);
+		unsigned timediff = (tv_end.tv_sec - tv_begin.tv_sec) * 1000000 + (tv_end.tv_usec - tv_begin.tv_usec),
+		timediff2 = (tv_end.tv_sec - tv_program_start.tv_sec) * 1000000 + (tv_end.tv_usec - tv_program_start.tv_usec);
+		printf("Write successfully in %d.%03d ms.\n", timediff / 1000, timediff % 1000);
+		printf("Program has run successfully in %d.%03dms\n", timediff2 / 1000, timediff2 % 1000);
 	}
 	return 0;
 }

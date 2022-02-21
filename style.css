@@ -12,8 +12,10 @@ strong{
     background-color: var(--bgc, none);
 }
 
-strong.note {
+.note {
     color: blue;
+    vertical-align: text-top;
+    font-size: 0.7em;
 }
 
 td{

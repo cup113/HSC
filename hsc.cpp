@@ -1,6 +1,6 @@
 /**
  * @file hsc.cpp Homework Showing Compiler
- * @version 0.2.1 (Beta)
+ * @version 0.2.2 (Beta)
  * @author Jason M. Li
  * @date 2022.2.20
  */
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
 			else if (ch == '>' && top_sp_ch== SP_CH::START_NOTE_SYMBOL) {
 				note_counter += 1;
 				tags.pop();
-				tags.top().tempstr += add_label("(注" + std::to_string(note_counter) + ')', "strong", attr_note);
+				tags.top().tempstr += add_label("[注" + std::to_string(note_counter) + ']', "span", attr_note);
 			}
 			else if (ch == '>' && top_sp_ch == SP_CH::START_NOTE_SYMBOL_TEXT) {
 				note_counter += 1;
@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
 				note_number *= tags.top().tempint;
 				note_number += note_counter;
 				tags.pop();
-				tags.top().tempstr += add_label("(注" + std::to_string(note_number) + ')', "strong", attr_note);
+				tags.top().tempstr += add_label("[注" + std::to_string(note_number) + ']', "span", attr_note);
 				note_counter -= 1;
 			}
 			// 强调

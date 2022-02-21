@@ -1,8 +1,8 @@
 /**
  * @file hsc.cpp Homework Showing Compiler
- * @version 0.2.2 (Beta)
+ * @version 0.2.3 (Beta)
  * @author Jason M. Li
- * @date 2022.2.20
+ * @date 2022.2.21
  */
 
 #include <cstdio>
@@ -133,11 +133,13 @@ int main(int argc, char *argv[]) {
 	std::map<std::string, std::string> attr_withsn,
 	attr_withoutsn,
 	attr_border,
-	attr_note;
+	attr_note,
+	attr_note_part;
 	attr_withsn["class"] = "withsn";
 	attr_withoutsn["class"] = "withoutsn";
 	attr_border["border"] = "1";
 	attr_note["class"] = "note";
+	attr_note_part["class"] = "note-part";
 	gettimeofday(&tv_begin, NULL);
 	while (reader.getline(linebuffer, LINE_BUF)) {
 		linelength = strlen(linebuffer);
@@ -173,8 +175,10 @@ int main(int argc, char *argv[]) {
 			}
 			else if (first_ch == '#') {
 				tags.push(Tag(SP_CH::START_SUBJECT));
-				strbuffer = strbuffer.substr(1);
-				linelength -= 1;
+				int start = 1;
+				if (strbuffer[1] == ' ') start = 2;
+				strbuffer = strbuffer.substr(start);
+				linelength -= start;
 			}
 		}
 		// 行内元素监测
@@ -374,7 +378,7 @@ int main(int argc, char *argv[]) {
 			}
 			else if (top_sp_ch == SP_CH::START_NOTE) {
 				number_counter = 0; // 复位
-				outfile.subjects.push_back(Subject("备注"));
+				outfile.subjects.push_back(Subject(add_label("备注", "span", attr_note_part)));
 			}
 			else if (top_sp_ch == SP_CH::START_SUBJECT) {
 				outfile.subjects.push_back(Subject(tags.top().tempstr));

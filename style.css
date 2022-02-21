@@ -18,6 +18,10 @@ strong{
     font-size: 0.7em;
 }
 
+.note-part {
+    color: blue;
+}
+
 td{
     padding: 3px 6px;
 }

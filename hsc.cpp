@@ -1,8 +1,8 @@
 /**
  * @file hsc.cpp Homework Showing Compiler
- * @version 0.2.3 (Beta)
+ * @version 0.2.4 (Beta)
  * @author Jason M. Li
- * @date 2022.2.21
+ * @date 2022.3.1
  */
 
 #include <cstdio>
@@ -291,10 +291,8 @@ int main(int argc, char *argv[]) {
 				tags.top().tempstr += add_label(text, "a", attrs);
 			}
 			// 空格分割的数据声明
-			else if (ch == ' ') {
-				if (top_sp_ch == SP_CH::META_MODIFIED) {
-					tags.push(Tag(SP_CH::META_MODIFIED_COLOR));
-				}
+			else if (ch == ' ' && top_sp_ch == SP_CH::META_MODIFIED) {
+				tags.push(Tag(SP_CH::META_MODIFIED_COLOR));
 			}
 			else {
 				tags.top().tempstr += ch;

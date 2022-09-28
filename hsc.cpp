@@ -395,7 +395,7 @@ int main(int argc, char* argv[]) {
     {
         // 写文件
         writer << "<!DOCTYPE html>" << std::endl << "<html lang='zh-cn'><head><meta name='charset' content='utf-8'><meta name='generator' content='Visual Studio Code'><meta name='author' content='Jason Li'><meta name='robots' content='noindex'><title>作业</title><link rel='shortcut icon' href='img/cube.ico' type='image/x-icon'><link rel='stylesheet' href='style.css'></head>" << std::endl << "<body>";
-        std::string published_note = add_label("发布于 " + outfile.published_time, "span");
+        std::string published_note = add_label("编辑于 " + outfile.published_time, "span");
         writer << published_note << std::endl;
         std::string table = "<thead><tr><td colspan='3'>" + outfile.date + "作业</td></tr><tr><td>科目</td><td>序号</td><td>项目</td></tr></thead>";
         std::string tbody = "";
@@ -427,7 +427,7 @@ int main(int argc, char* argv[]) {
         int modi_length = outfile.modified_times.size();
         for (int i = 0; i < modi_length; i++) {
             Modification modi = outfile.modified_times[i];
-            create_modi_note += " / " + add_label(modi.modified_time + " 更正", "strong", { {"--bgc", modi.bg_color} });
+            create_modi_note += " / " + add_label(modi.modified_time + " 更正", "strong", { {"style", "--bgc:" + modi.bg_color} });
         }
         create_modi_note = add_label(create_modi_note, "span");
         writer << create_modi_note << std::endl;

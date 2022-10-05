@@ -1,13 +1,13 @@
-table{
+table {
     margin: 0 auto;
     text-align: center;
 }
 
-thead{
+thead {
     font-weight: bold;
 }
 
-strong{
+strong {
     color: brown;
     background-color: var(--bgc, none);
 }
@@ -22,23 +22,33 @@ strong{
     color: blue;
 }
 
-td{
+td {
     padding: 3px 6px;
 }
 
-body>span:nth-of-type(1){
+body>span {
     display: block;
     text-align: center;
+    color: grey;
+}
+
+body>span:nth-of-type(1) {
+    margin-bottom: 1em;
+}
+
+body>span:nth-of-type(2) {
     margin-top: 5em;
     color: grey;
     font-size: 0.7em;
 }
 
-.withsn>td:nth-child(1){
+.ll>td:nth-child(1) {
     font-size: 1.2em;
     word-break: break-all;
 }
-.withsn>td:nth-child(3), .withoutsn>td:nth-child(2){
+
+.ll>td:nth-child(3),
+.sl>td:nth-child(2) {
     max-width: 20em;
     word-break: break-word;
 }

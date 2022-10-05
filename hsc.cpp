@@ -1,8 +1,8 @@
 /**
  * @file hsc.cpp Homework Showing Compiler
- * @version 0.3.0 (Beta)
+ * @version 0.3.1 (Beta)
  * @author Jason M. Li
- * @date 2022.3.1
+ * @date 2022.10.5
  */
 
 #include <cstdio>
@@ -411,13 +411,15 @@ int main(int argc, char* argv[]) {
                 std::string td1 = add_label(subject.name, "td", attrs),
                     td2 = add_label(std::to_string(item.number), "td"),
                     td3 = add_label(item.text, "td");
-                tbody += add_label(td1 + td2 + td3, "tr", { {"class", "withsn"} });
+                tbody += add_label(td1 + td2 + td3, "tr", { {"class", "ll"} });
+                // ll: Long Line
             }
             for (int j = 1; j < item_length; j++) {
                 item = subject.items[j];
                 std::string td1 = add_label(std::to_string(item.number), "td");
                 std::string td2 = add_label(item.text, "td");
-                tbody += add_label(td1 + td2, "tr", { {"class", "withoutsn"} });
+                tbody += add_label(td1 + td2, "tr", { {"class", "sl"} });
+                // sl: Short Line
             }
         }
         table += add_label(tbody, "tbody");

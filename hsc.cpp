@@ -1,6 +1,6 @@
 /**
  * @file hsc.cpp Homework Showing Compiler
- * @version 0.2.4 (Beta)
+ * @version 0.3.0 (Beta)
  * @author Jason M. Li
  * @date 2022.3.1
  */
@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
     }
     {
         // 写文件
-        writer << "<!DOCTYPE html>" << std::endl << "<html lang='zh-cn'><head><meta name='charset' content='utf-8'><meta name='generator' content='Visual Studio Code'><meta name='author' content='Jason Li'><meta name='robots' content='noindex'><title>作业</title><link rel='shortcut icon' href='img/cube.ico' type='image/x-icon'><link rel='stylesheet' href='style.css'></head>" << std::endl << "<body>";
+        writer << "<!DOCTYPE html>" << std::endl << "<html lang='zh-CN'><head><meta charset='UTF-8'><meta name='generator' content='HSC'><meta name='robots' content='noindex'><title>作业</title><link rel='shortcut icon' href='favicon.ico' type='image/x-icon'><link rel='stylesheet' href='style.css'></head>" << std::endl << "<body>";
         std::string published_note = add_label("编辑于 " + outfile.published_time, "span");
         writer << published_note << std::endl;
         std::string table = "<thead><tr><td colspan='3'>" + outfile.date + "作业</td></tr><tr><td>科目</td><td>序号</td><td>项目</td></tr></thead>";

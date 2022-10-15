@@ -397,9 +397,7 @@ int main(int argc, char* argv[]) {
             Item item;
             if (item_length != 0) {
                 item = subject.items[0];
-                std::map<string, string> attrs;
-                attrs["rowspan"] = std::to_string(item_length);
-                string td1 = add_label(subject.name, "td", attrs),
+                string td1 = add_label(subject.name, "td", { {"rowspan", std::to_string(item_length)} }),
                     td2 = add_label(std::to_string(item.number), "td"),
                     td3 = add_label(item.text, "td");
                 tbody += add_label(td1 + td2 + td3, "tr", { {"class", "ll"} });
